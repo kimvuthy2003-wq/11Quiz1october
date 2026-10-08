@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ការពិសោធន៍ និងការវាយតម្លៃ ដែនអគ្គិសនី</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Battambang', 'Khmer OS Battambang', sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            touch-action: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        .btn {
+            transition: all 0.2s ease;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .btn-active-state {
+            background-color: #3b82f6 !important;
+            color: white !important;
+            border-color: #2563eb !important;
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #2563eb;
+            color: #2563eb;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden">
+
+    <!-- Navigation Bar / Tabs -->
+    <header class="w-full bg-white border-b border-slate-200 shadow-sm z-20 flex justify-between items-center px-6 py-2">
+        <h1 class="text-lg font-bold text-slate-800">មេរៀនទី២៖ កម្មន្ត និងប៉ូតង់ស្យែលអគ្គិសនី</h1>
+        <div class="flex space-x-4">
+            <button id="tab-sim-btn" onclick="switchTab('sim')" class="tab-btn active px-4 py-2 text-slate-600 hover:text-blue-600">
+                1. កម្មវិធីពិសោធន៍
+            </button>
+            <button id="tab-quiz-btn" onclick="switchTab('quiz')" class="tab-btn px-4 py-2 text-slate-600 hover:text-blue-600">
+                2. កម្រងសំណួរវាយតម្លៃ (75 ពិន្ទុ)
+            </button>
+        </div>
+    </header>
+
+    <!-- Tab 1: Simulator Content -->
+    <div id="tab-sim" class="flex-1 flex flex-col relative w-full h-full overflow-hidden">
+        <div class="w-full bg-slate-50 border-b border-slate-200 p-3 flex flex-wrap justify-center gap-2 sm:gap-4 z-10">
+            <button id="toggle-efield" class="btn btn-active-state border-2 border-slate-300 bg-white text-slate-700 px-3 py-1.5 rounded-lg font-bold shadow-sm hover:bg-slate-100 text-sm">
+                បង្ហាញ/លាក់ ដែនអគ្គិសនី
+            </button>
+            <button id="toggle-potential" class="btn btn-active-state border-2 border-slate-300 bg-white text-slate-700 px-3 py-1.5 rounded-lg font-bold shadow-sm hover:bg-slate-100 text-sm">
+                បង្ហាញ/លាក់ ដែនប៉ូតង់ស្យែល
+            </button>
+            <button id="add-charge" class="btn border-2 border-green-500 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg font-bold shadow-sm hover:bg-green-100 text-sm flex items-center gap-2">
+                <span class="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">+</span>
+                ទាញបន្ទុកសាក +q
+            </button>
+            <button id="toggle-sensor" class="btn border-2 border-purple-500 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg font-bold shadow-sm hover:bg-purple-100 text-sm flex items-center gap-2">
+                <span class="bg-purple-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">⌖</span>
+                សេនស័រវាស់
+            </button>
+        </div>
+
+        <main class="flex-1 relative w-full h-full bg-white overflow-hidden" id="canvas-container">
+            <canvas id="sim-canvas"></canvas>
+            <div id="instruction" class="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800/70 text-white px-6 py-3 rounded-full text-sm pointer-events-none opacity-0 transition-opacity duration-300">
+                ចុចសង្កត់និងទាញបន្ទុកសាក ដើម្បីដាក់វានៅក្នុងដែនអគ្គិសនី
+            </div>
+        </main>
+    </div>
+
+    <!-- Tab 2: Quiz Content -->
+    <div id="tab-quiz" class="hidden flex-1 w-full h-full overflow-y-auto p-4 sm:p-8 bg-slate-50">
+        <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-md border border-slate-200 mb-10">
+            <h2 class="text-2xl font-bold text-slate-800 text-center mb-2">កម្រងសំណួរពិនិត្យចំណេះដឹង (សរុប ៧៥ ពិន្ទុ)</h2>
+            <p class="text-slate-600 text-center mb-6 text-sm">សូមសង្កេតមើលកម្មវិធីក្លែងធ្វើក្នុង Tab ទី១ រួចឆ្លើយសំណួរខាងក្រោម៖</p>
+
+            <form id="quiz-form" onsubmit="submitQuiz(event)">
+                <!-- Student Info (បានកែប្រែជា Dropdown) -->
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">ថ្នាក់ <span class="text-red-500">*</span></label>
+                        <select id="student-class" required class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" onchange="updateNames()">
+                            <option value="">ជ្រើសរើសថ្នាក់</option>
+                            <option value="11A">11A</option>
+                            <option value="11B">11B</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">ឈ្មោះសិស្ស <span class="text-red-500">*</span></label>
+                        <select id="student-name" required class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">ជ្រើសរើសឈ្មោះ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Questions -->
+                <div class="space-y-6">
+                    <!-- Q1 -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-800 mb-2">១. តើសញ្ញាព្រួញនៃដែនអគ្គិសនីជុំវិញបន្ទុកវិជ្ជមាន +Q មានទិសដៅដូចម្តេច? (១០ ពិន្ទុ)</p>
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <label class="block"><input type="radio" name="q1" value="A" required class="mr-2"> ក. រត់ចូលមករកបន្ទុកវិជ្ជមាន +Q</label>
+                            <label class="block"><input type="radio" name="q1" value="B" class="mr-2"> ខ. រត់ចេញពីរង្វង់ចម្លងឆ្ពោះទៅក្រៅ</label>
+                            <label class="block"><input type="radio" name="q1" value="C" class="mr-2"> គ. រត់ជារង្វង់ជុំវិញបន្ទុក +Q</label>
+                        </div>
+                    </div>
+
+                    <!-- Q2 -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-800 mb-2">២. នៅពេលយើងរំកិលសេនស័រវាស់ឱ្យកាន់តែឆ្ងាយពីបន្ទុក +Q តើតម្លៃនៃដែនអគ្គិសនី E ប្រែប្រួលដូចម្តេច? (១០ ពិន្ទុ)</p>
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <label class="block"><input type="radio" name="q2" value="A" required class="mr-2"> ក. កើនឡើង</label>
+                            <label class="block"><input type="radio" name="q2" value="B" class="mr-2"> ខ. ថយចុះ</label>
+                            <label class="block"><input type="radio" name="q2" value="C" class="mr-2"> គ. នៅថេរមិនប្រែប្រួល</label>
+                        </div>
+                    </div>
+
+                    <!-- Q3 -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-800 mb-2">៣. ខ្សែដាច់ៗពណ៌បៃតងរង្វង់ជុំវិញបន្ទុក +Q ក្នុង simulator តំណាងឱ្យអ្វី? (១០ ពិន្ទុ)</p>
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <label class="block"><input type="radio" name="q3" value="A" required class="mr-2"> ក. ខ្សែដង់ស៊ីតេបន្ទុក</label>
+                            <label class="block"><input type="radio" name="q3" value="B" class="mr-2"> ខ. ខ្សែស្មើប៉ូតង់ស្យែល (Equipotential Lines)</label>
+                            <label class="block"><input type="radio" name="q3" value="C" class="mr-2"> គ. ខ្សែគន្លងចលនានៃបន្ទុក</label>
+                        </div>
+                    </div>
+
+                    <!-- Q4 -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-800 mb-2">៤. នៅពេលលែងបន្ទុកសាក +q ឱ្យមានសេរីភាពក្នុងដែន តើវាមានចលនាដូចម្តេច? (១០ ពិន្ទុ)</p>
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <label class="block"><input type="radio" name="q4" value="A" required class="mr-2"> ក. រត់ចេញឆ្ងាយពីបន្ទុក +Q (ច្រានចេញ)</label>
+                            <label class="block"><input type="radio" name="q4" value="B" class="mr-2"> ខ. រត់ចូលមករកបន្ទុក +Q (ទាញចូល)</label>
+                            <label class="block"><input type="radio" name="q4" value="C" class="mr-2"> គ. ឈប់ស្ងៀមមិនផ្លាស់ទី</label>
+                        </div>
+                    </div>
+
+                    <!-- Q5 -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-800 mb-2">៥. តើតម្លៃប៉ូតង់ស្យែលអគ្គិសនី V និងអាំងតង់ស៊ីតេដែនអគ្គិសនី E មានទំនាក់ទំនងយ៉ាងដូចម្តេចជាមួយចម្ងាយ r? (១០ ពិន្ទុ)</p>
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <label class="block"><input type="radio" name="q5" value="A" required class="mr-2"> ក. V និង E ច្រាសសមាមាត្រជាមួយចម្ងាយ r និង r²</label>
+                            <label class="block"><input type="radio" name="q5" value="B" class="mr-2"> ខ. V និង E សមាមាត្រផ្ទាល់ជាមួយចម្ងាយ r</label>
+                            <label class="block"><input type="radio" name="q5" value="C" class="mr-2"> គ. V និង E មិនអាស្រ័យនឹងចម្ងាយ r ទេ</label>
+                        </div>
+                    </div>
+
+                    <!-- Q6 -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-800 mb-2">៦. ប្រសិនបើចម្ងាយ r កើនឡើង ២ដង តើតម្លៃអាំងតង់ស៊ីតេដែនអគ្គិសនី E ថយចុះប៉ុន្មានដង? (១២.៥ ពិន្ទុ)</p>
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <label class="block"><input type="radio" name="q6" value="A" required class="mr-2"> ក. ថយចុះ ២ ដង</label>
+                            <label class="block"><input type="radio" name="q6" value="B" class="mr-2"> ខ. ថយចុះ ៤ ដង</label>
+                            <label class="block"><input type="radio" name="q6" value="C" class="mr-2"> គ. ថយចុះ ៨ ដង</label>
+                        </div>
+                    </div>
+
+                    <!-- Q7 -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-800 mb-2">៧. យោងតាមរូបមន្ត V = kq/r ប្រសិនបើប៉ូតង់ស្យែលត្រង់ចំណុចមួយមានតម្លៃ 100V តើតម្លៃប៉ូតង់ស្យែលត្រង់ចំណុចដែលមានចម្ងាយឆ្ងាយជាងមុន ២ដង មានតម្លៃប៉ុន្មាន? (១២.៥ ពិន្ទុ)</p>
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <label class="block"><input type="radio" name="q7" value="A" required class="mr-2"> ក. 200 V</label>
+                            <label class="block"><input type="radio" name="q7" value="B" class="mr-2"> ខ. 50 V</label>
+                            <label class="block"><input type="radio" name="q7" value="C" class="mr-2"> គ. 25 V</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg text-lg transition duration-200">
+                        បញ្ជូនចម្លើយ និងពិន្ទុ (Submit)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ទិន្នន័យឈ្មោះសិស្សទាញចេញពីឯកសាររបស់អ្នក (ថ្នាក់ 11A និង 11B)
+        const namesData = {
+            "11A": ['អេង សុវណ្ណថារី', 'ប៊ុន ខត្តិយាវតី', 'ប៉ាក ច័ន្ទដាវីត', 'អ៊ីវ សុគន្ធបរមី', 'ភូ លីណា', 'ពន្លឺ ពេជ្រចាន់ពិសី្ស', 'ប៉ុន សុវណ្ណា', 'ប៉ុន សុវណ្ណលី', 'ភូ សុគន្ធវត្តី', 'ឡាយ ស៊ុនអាន', 'នួន នីណា', 'ង៉ែត សុគន្ធរក្សា', 'ហុក គីមស៊ាន់', 'សៀន ពិសិដ្ធ', 'លី សុរក្សា', 'គង់ ភារ៉ា', 'ខន ស្រីនុត', 'រិទ្ធ ទេវរបុត្រ', 'រាជ បញ្ញាស័ក្ត', 'គង់ សំរិទ្ធម៉ីលីង', 'ស៊ី អ៊ុយហុង', 'ផាត សុវណ្ណវឌ្ឍនា', 'ប៉ែន សុខមាន', 'ឆេង ឡុងហ៊ូន', 'គុយ សុធីរាវិសិដ្ឋនាថ', 'ម៉ៅ ស្រីហេង', 'ញ៉ុន សំភី', 'ខេង សីហវិរៈសត្យា'],
+            "11B": ['លីម នូស៊ីម', 'មុន្នី ករុណា', 'សុវណ្ណ អាលីហ្សា', 'ហង្ស ពេជ្រពិសី', 'ស៊ឹង សុវណ្ណរាជ្យ', 'សម សុបញ្ញា', 'វិន សិលា', 'ធា ណារី', 'សុខ ពន្លឺ', 'រុន រស្មី', 'ខូវ ឡាយអ៊ូ', 'លីម គីមឡេង', 'ច័ន្ទ សុខុមវីរៈបុត្រ', 'ណាង ណយ', 'ថាន់ គឹមឡាយ', 'ថា គឹមឡុង', 'សុខា ម៉ាសូជីន', 'ប៊ុន ម៉ីម៉ី', 'ញ៉ែត សេង', 'ទេព លីហ្សា', 'ទ្រី លីហុង', 'វ៉ាត ជីហេង', 'ស៊ុន ហៃនីកូ', 'មន្ត សេរីមុនីរតនៈ', 'ផន សវណ្ណបញ្ញា', 'សាយ គីមហ្គេច', 'លឹម ម៉ិញគាត']
+        };
+
+        // អនុគមន៍សម្រាប់បញ្ចេញឈ្មោះសិស្សពេលជ្រើសរើសថ្នាក់រួច
+        function updateNames() {
+            const classSelect = document.getElementById('student-class');
+            const nameSelect = document.getElementById('student-name');
+            const selectedClass = classSelect.value;
+            
+            // លុបឈ្មោះចាស់ចោល និងកំណត់លំនាំដើម
+            nameSelect.innerHTML = '<option value="">ជ្រើសរើសឈ្មោះ</option>';
+            
+            // បញ្ចូលឈ្មោះថ្មីទៅតាមថ្នាក់
+            if (selectedClass && namesData[selectedClass]) {
+                namesData[selectedClass].forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    nameSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Tab switching logic
+        function switchTab(tab) {
+            const simTab = document.getElementById('tab-sim');
+            const quizTab = document.getElementById('tab-quiz');
+            const simBtn = document.getElementById('tab-sim-btn');
+            const quizBtn = document.getElementById('tab-quiz-btn');
+
+            if(tab === 'sim') {
+                simTab.classList.remove('hidden');
+                quizTab.classList.add('hidden');
+                simBtn.classList.add('active');
+                quizBtn.classList.remove('active');
+            } else {
+                simTab.classList.add('hidden');
+                quizTab.classList.remove('hidden');
+                quizBtn.classList.add('active');
+                simBtn.classList.remove('active');
+            }
+        }
+
+        // Quiz Evaluation & Google Sheet submission
+        function submitQuiz(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('student-name').value;
+            const studentClass = document.getElementById('student-class').value;
+
+            // ឆែកមើលថាតើសិស្សបានជ្រើសរើសឈ្មោះហើយឬនៅ
+            if(name === "") {
+                alert("សូមជ្រើសរើសឈ្មោះរបស់អ្នក!");
+                return;
+            }
+
+            // Correct Answers
+            const answers = {
+                q1: 'B', // 10 pts
+                q2: 'B', // 10 pts
+                q3: 'B', // 10 pts
+                q4: 'A', // 10 pts
+                q5: 'A', // 10 pts
+                q6: 'B', // 12.5 pts
+                q7: 'B'  // 12.5 pts
+            };
+
+            let score = 0;
+
+            if (document.querySelector('input[name="q1"]:checked')?.value === answers.q1) score += 10;
+            if (document.querySelector('input[name="q2"]:checked')?.value === answers.q2) score += 10;
+            if (document.querySelector('input[name="q3"]:checked')?.value === answers.q3) score += 10;
+            if (document.querySelector('input[name="q4"]:checked')?.value === answers.q4) score += 10;
+            if (document.querySelector('input[name="q5"]:checked')?.value === answers.q5) score += 10;
+            if (document.querySelector('input[name="q6"]:checked')?.value === answers.q6) score += 12.5;
+            if (document.querySelector('input[name="q7"]:checked')?.value === answers.q7) score += 12.5;
+
+            // អ្នកអាចបញ្ចូល URL របស់ Google Apps Script របស់អ្នកនៅទីនេះ
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbyrgYCtiko3eFHGgIeyBR928Zk7IB8sqS44K4-xBkfg1SMJlin4evMt1SU-cSjBcw/exec';
+
+            if (scriptURL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
+                alert(`អបអរសាទរ ${name}!\nអ្នកទទួលបានពិន្ទុ៖ ${score} / ៧៥\n\n(ចំណាំ៖ មិនទាន់ភ្ជាប់ទៅ Google Sheet ទេ ដោយសារមិនទាន់បានដាក់ Link Web App)`);
+            } else {
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'កំពុងបញ្ជូន...';
+
+                // បង្កើតទម្រង់ទិន្នន័យ (FormData) ដែលត្រូវជាមួយកូដ Google Apps Script
+                let formData = new URLSearchParams();
+                formData.append('class', studentClass);
+                formData.append('name', name);
+                formData.append('score', score);
+                // បានលុប timestamp ចេញ
+
+                fetch(scriptURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                }).then(() => {
+                    alert(`អបអរសាទរ ${name}!\nអ្នកទទួលបានពិន្ទុ៖ ${score} / ៧៥\n\nទិន្នន័យត្រូវបានបញ្ជូនទៅ Google Sheet រួចរាល់!`);
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'បញ្ជូនចម្លើយ និងពិន្ទុ (Submit)';
+                    document.getElementById('quiz-form').reset();
+                    updateNames(); // reset dropdown ឈ្មោះ
+                }).catch(err => {
+                    console.error('Error!', err.message);
+                    alert('មានបញ្ហាក្នុងការបញ្ជូនទិន្នន័យ! សូមសាកល្បងម្ដងទៀត។');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'បញ្ជូនចម្លើយ និងពិន្ទុ (Submit)';
+                });
+            }
+        }
+
+        // Simulator Logic
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        const instructionBox = document.getElementById('instruction');
+
+        let width, height, cx, cy;
+        let showEField = true;
+        let showPotential = true;
+        
+        const sourceCharge = { x: 0, y: 0, q: 1, radius: 30, color: '#ef4444' };
+        let testCharges = [];
+        let draggingCharge = null;
+
+        let sensor = { active: false, x: 100, y: 100, radius: 20, isBeingDragged: false };
+        const K_E = 20000; 
+
+        function resizeCanvas() {
+            width = container.clientWidth;
+            height = container.clientHeight;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+            cx = width / 2;
+            cy = height / 2;
+            sourceCharge.x = cx;
+            sourceCharge.y = cy;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawArrow(context, fromx, fromy, tox, toy, color = '#94a3b8') {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            context.beginPath();
+            context.moveTo(fromx, fromy);
+            context.lineTo(tox, toy);
+            context.strokeStyle = color;
+            context.lineWidth = 1.5;
+            context.stroke();
+            
+            context.beginPath();
+            context.moveTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            context.lineTo(tox, toy);
+            context.fillStyle = color;
+            context.fill();
+        }
+
+        function drawFields() {
+            if (showPotential) {
+                ctx.strokeStyle = 'rgba(34, 197, 94, 0.4)';
+                ctx.setLineDash([8, 6]);
+                ctx.lineWidth = 1.5;
+                for (let r = 80; r <= Math.max(width, height); r += Math.pow(r, 0.6) * 4) {
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+            }
+
+            if (showEField) {
+                const numRings = 7;
+                const baseRadius = 60;
+                for (let ring = 1; ring <= numRings; ring++) {
+                    const r = baseRadius + ring * (Math.max(width, height) / numRings);
+                    const arrowsPerRing = 8 + ring * 4;
+                    for (let a = 0; a < arrowsPerRing; a++) {
+                        const angle = (a / arrowsPerRing) * Math.PI * 2;
+                        const bx = cx + Math.cos(angle) * (r - 20);
+                        const by = cy + Math.sin(angle) * (r - 20);
+                        const tx = cx + Math.cos(angle) * (r + 15);
+                        const ty = cy + Math.sin(angle) * (r + 15);
+                        const opacity = Math.max(0.1, 1 - (ring / (numRings + 2)));
+                        drawArrow(ctx, bx, by, tx, ty, `rgba(148, 163, 184, ${opacity})`);
+                    }
+                }
+            }
+        }
+
+        function drawCharges() {
+            ctx.beginPath();
+            ctx.arc(sourceCharge.x, sourceCharge.y, sourceCharge.radius, 0, Math.PI * 2);
+            ctx.fillStyle = sourceCharge.color;
+            ctx.fill();
+
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 30px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('+', sourceCharge.x, sourceCharge.y + 2);
+
+            testCharges.forEach(tc => {
+                if (tc.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(tc.trail[0].x, tc.trail[0].y);
+                    for (let i = 1; i < tc.trail.length; i++) {
+                        ctx.lineTo(tc.trail[i].x, tc.trail[i].y);
+                    }
+                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.arc(tc.x, tc.y, tc.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#3b82f6';
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText('+q', tc.x, tc.y + 1);
+            });
+        }
+
+        function drawSensor() {
+            if (!sensor.active) return;
+            const sx = sensor.x;
+            const sy = sensor.y;
+
+            ctx.beginPath();
+            ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+            ctx.strokeStyle = '#9333ea';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(sx - 15, sy);
+            ctx.lineTo(sx + 15, sy);
+            ctx.moveTo(sx, sy - 15);
+            ctx.lineTo(sx, sy + 15);
+            ctx.strokeStyle = '#9333ea';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            const dx = sx - sourceCharge.x;
+            const dy = sy - sourceCharge.y;
+            let r = Math.sqrt(dx * dx + dy * dy);
+            if (r < 1) r = 1;
+
+            const K_DISPLAY = 50000;
+            const E_mag = K_DISPLAY / (r * r);
+            const V_mag = K_DISPLAY / r;
+
+            const arrowLen = Math.min(Math.max(E_mag * 10, 20), 80); 
+            const ex = sx + (dx / r) * arrowLen;
+            const ey = sy + (dy / r) * arrowLen;
+            drawArrow(ctx, sx, sy, ex, ey, '#f59e0b');
+
+            ctx.font = 'bold 14px "Battambang", Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            const textX = sx + 15;
+            const textY = sy - 15;
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.fillRect(textX - 5, textY - 45, 120, 50);
+
+            ctx.fillStyle = '#9333ea';
+            ctx.fillText(`V = ${V_mag.toFixed(1)} V`, textX, textY - 22);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText(`E = ${E_mag.toFixed(2)} V/m`, textX, textY);
+        }
+
+        function updatePhysics() {
+            for (let i = testCharges.length - 1; i >= 0; i--) {
+                let tc = testCharges[i];
+                if (!tc.isBeingDragged && tc.released) {
+                    const dx = tc.x - cx;
+                    const dy = tc.y - cy;
+                    let distSquared = dx * dx + dy * dy;
+                    let dist = Math.sqrt(distSquared);
+                    
+                    if (dist < sourceCharge.radius + tc.radius) {
+                        dist = sourceCharge.radius + tc.radius;
+                        distSquared = dist * dist;
+                    }
+
+                    const force = K_E / distSquared;
+                    const ax = force * (dx / dist);
+                    const ay = force * (dy / dist);
+                    
+                    tc.vx = (tc.vx + ax) * 0.99;
+                    tc.vy = (tc.vy + ay) * 0.99;
+
+                    tc.x += tc.vx;
+                    tc.y += tc.vy;
+
+                    tc.trail.push({ x: tc.x, y: tc.y });
+                    if (tc.trail.length > 50) tc.trail.shift();
+
+                    if (tc.x < -200 || tc.x > width + 200 || tc.y < -200 || tc.y > height + 200) {
+                        testCharges.splice(i, 1);
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updatePhysics();
+            drawFields();
+            drawCharges();
+            drawSensor();
+            requestAnimationFrame(animate);
+        }
+
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            const pos = getPointerPos(e);
+            if (sensor.active && Math.sqrt((pos.x - sensor.x)**2 + (pos.y - sensor.y)**2) < sensor.radius + 15) {
+                sensor.isBeingDragged = true;
+                return;
+            }
+            for (let i = testCharges.length - 1; i >= 0; i--) {
+                const tc = testCharges[i];
+                if (Math.sqrt((pos.x - tc.x)**2 + (pos.y - tc.y)**2) < tc.radius + 15) {
+                    draggingCharge = tc;
+                    tc.isBeingDragged = true;
+                    tc.vx = 0; tc.vy = 0;
+                    tc.trail = [{x: tc.x, y: tc.y}];
+                    break;
+                }
+            }
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            const pos = getPointerPos(e);
+            if (sensor.isBeingDragged) {
+                sensor.x = pos.x; sensor.y = pos.y;
+            } else if (draggingCharge) {
+                draggingCharge.x = pos.x; draggingCharge.y = pos.y;
+                draggingCharge.trail.push({x: pos.x, y: pos.y});
+            }
+        });
+
+        window.addEventListener('pointerup', () => {
+            sensor.isBeingDragged = false;
+            if (draggingCharge) {
+                draggingCharge.isBeingDragged = false;
+                draggingCharge.released = true;
+                draggingCharge = null;
+            }
+        });
+
+        document.getElementById('toggle-efield').addEventListener('click', function() {
+            showEField = !showEField;
+            this.classList.toggle('btn-active-state');
+        });
+
+        document.getElementById('toggle-potential').addEventListener('click', function() {
+            showPotential = !showPotential;
+            this.classList.toggle('btn-active-state');
+        });
+
+        document.getElementById('add-charge').addEventListener('click', () => {
+            testCharges.push({
+                x: width / 4, y: height / 4, radius: 12, vx: 0, vy: 0,
+                isBeingDragged: false, released: false, trail: [{x: width / 4, y: height / 4}]
+            });
+            instructionBox.style.opacity = '1';
+            setTimeout(() => { instructionBox.style.opacity = '0'; }, 3000);
+        });
+
+        document.getElementById('toggle-sensor').addEventListener('click', function() {
+            sensor.active = !sensor.active;
+            if(sensor.active) {
+                sensor.x = cx + 100; sensor.y = cy - 100;
+            }
+        });
+
+        window.onload = animate;
+    </script>
+</body>
+</html>
